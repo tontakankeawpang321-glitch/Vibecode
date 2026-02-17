@@ -219,14 +219,9 @@
             localStorage.setItem('vibe-code-full', editor.value);
         });
 
-        let currentBlobUrl = null;
-
+        // 🔥 UPDATE: เปลี่ยนกลับมาใช้ srcdoc เพื่อรองรับ WebView บนมือถือ
         function updatePreview() {
-            const code = editor.value;
-            if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
-            const blob = new Blob([code], { type: 'text/html' });
-            currentBlobUrl = URL.createObjectURL(blob);
-            preview.src = currentBlobUrl;
+            preview.srcdoc = editor.value;
         }
 
         // 🔥 Clear Code ด้วย SweetAlert2
