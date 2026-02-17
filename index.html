@@ -115,7 +115,8 @@
 
                 <div class="bg-green-600/90 backdrop-blur text-[10px] px-3 py-1 text-white rounded-b-lg shadow-md font-bold tracking-wider">PREVIEW</div>
              </div>
-            <iframe id="preview-frame" class="w-full h-full border-none bg-white flex-1"></iframe>
+             <!-- 🔥 FIX: เพิ่ม sandbox attribute -->
+            <iframe id="preview-frame" class="w-full h-full border-none bg-white flex-1" sandbox="allow-scripts allow-same-origin"></iframe>
         </section>
 
     </main>
