@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SweetAlert2 CSS & JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- JSZip for Exporting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -76,6 +78,12 @@
             </span>
         </div>
         <div class="flex gap-2">
+            <!-- Export ZIP Button -->
+            <button onclick="exportZIP()" class="group flex items-center gap-1 px-3 py-1.5 rounded-md bg-gray-800 hover:bg-yellow-600 text-gray-300 hover:text-white transition-all border border-gray-700 hover:border-yellow-500" title="Export ZIP">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span class="text-xs font-semibold">ZIP</span>
+            </button>
+
             <!-- Copy Button -->
             <button onclick="copyCode()" class="group flex items-center gap-1 px-3 py-1.5 rounded-md bg-gray-800 hover:bg-blue-600 text-gray-300 hover:text-white transition-all border border-gray-700 hover:border-blue-500" title="Copy All">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
@@ -223,6 +231,45 @@
         // 🔥 UPDATE: เปลี่ยนกลับมาใช้ srcdoc เพื่อรองรับ WebView บนมือถือ
         function updatePreview() {
             preview.srcdoc = editor.value;
+        }
+
+        // 🔥 EXPORT ZIP FUNCTION
+        async function exportZIP() {
+            // สร้าง instance ของ JSZip
+            const zip = new JSZip();
+            // นำโค้ดจาก Editor ใส่ลงไปในไฟล์ index.html ใน zip
+            zip.file("index.html", editor.value);
+
+            // สร้าง Blob จาก Zip
+            const content = await zip.generateAsync({type:"blob"});
+            const reader = new FileReader();
+
+            // Logic สำหรับ Android หรือ Browser ทั่วไป
+            reader.onloadend = function(){
+                if(window.Android && window.Android.saveBase64File){
+                    window.Android.saveBase64File(reader.result);
+                    Swal.fire('Sent to Android', 'File sent to Android native handler', 'success');
+                } else {
+                    // fallback ถ้าเปิดใน browser ปกติ
+                    const a=document.createElement("a");
+                    a.href=URL.createObjectURL(content);
+                    a.download="ebook_complete.zip";
+                    a.click();
+                    
+                    // แจ้งเตือนเล็กๆ
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        background: '#374151',
+                        color: '#fff'
+                    });
+                    Toast.fire({ icon: 'success', title: 'Export ZIP สำเร็จ!' });
+                }
+            }
+
+            reader.readAsDataURL(content);
         }
 
         // 🔥 Clear Code ด้วย SweetAlert2
