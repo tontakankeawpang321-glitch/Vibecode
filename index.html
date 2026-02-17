@@ -28,14 +28,16 @@
             caret-color: #f472b6; 
         }
 
-        /* Tab System - Only show active tab */
+        /* 🔥 FIX: บังคับซ่อน/แสดงด้วย !important เพื่อแก้ปัญหา Tailwind override */
         .tab-content {
-            display: none;
+            display: none !important;
             width: 100%;
             height: 100%;
         }
+        
         .tab-content.active {
-            display: block;
+            display: flex !important; /* บังคับให้เป็น Flexbox เมื่อ Active */
+            flex-direction: column;
             animation: fadeIn 0.2s ease-in-out;
         }
 
@@ -62,7 +64,7 @@
         <div class="flex gap-2">
             <!-- Copy Button -->
             <button onclick="copyCode()" class="group flex items-center gap-1 px-3 py-1.5 rounded-md bg-gray-800 hover:bg-blue-600 text-gray-300 hover:text-white transition-all border border-gray-700 hover:border-blue-500" title="Copy All">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2-2v1"></path></svg>
                 <span class="text-xs font-semibold">COPY</span>
             </button>
             
@@ -78,7 +80,7 @@
     <main class="flex-1 overflow-hidden relative bg-[#1e1e2e]">
         
         <!-- Editor Pane (Full Screen) -->
-        <section id="editor-pane" class="tab-content active h-full flex flex-col relative">
+        <section id="editor-pane" class="tab-content active relative">
             <div class="absolute top-0 right-4 bg-blue-600/90 backdrop-blur text-[10px] px-3 py-1 text-white rounded-b-lg shadow-md z-10 font-bold tracking-wider">EDITOR</div>
             <textarea 
                 id="code-editor" 
@@ -89,7 +91,7 @@
         </section>
 
         <!-- Preview Pane (Full Screen) -->
-        <section id="preview-pane" class="tab-content h-full bg-white relative">
+        <section id="preview-pane" class="tab-content bg-white relative">
              <div class="absolute top-0 right-4 flex gap-2 z-10">
                 <button onclick="openNewTab()" class="bg-gray-800/90 hover:bg-gray-700 backdrop-blur text-[10px] px-3 py-1 text-white rounded-b-lg shadow-md font-bold tracking-wider flex items-center gap-1 transition-colors border-t border-gray-700 cursor-pointer">
                     OPEN NEW TAB 
@@ -97,13 +99,13 @@
                 </button>
                 <div class="bg-green-600/90 backdrop-blur text-[10px] px-3 py-1 text-white rounded-b-lg shadow-md font-bold tracking-wider">PREVIEW</div>
              </div>
-            <iframe id="preview-frame" class="w-full h-full border-none bg-white"></iframe>
+            <iframe id="preview-frame" class="w-full h-full border-none bg-white flex-1"></iframe>
         </section>
 
     </main>
 
     <!-- Bottom Navigation Bar (Visible on ALL screens) -->
-    <nav class="h-16 bg-gray-900 border-t border-gray-800 flex shrink-0 pb-safe">
+    <nav class="h-16 bg-gray-900 border-t border-gray-800 flex shrink-0 pb-safe z-30">
         <button onclick="switchTab('editor')" id="btn-editor" class="flex-1 flex flex-col items-center justify-center gap-1 text-pink-400 font-medium bg-gray-800/50 relative overflow-hidden group">
             <div class="absolute top-0 left-0 w-full h-0.5 bg-pink-400"></div>
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
@@ -200,16 +202,25 @@
             localStorage.setItem('vibe-code-full', editor.value);
         });
 
-        // Robust Preview Function (Standard Document Write - Most Compatible)
+        // -----------------------------------------------------------
+        // 🔥 UPDATE: ใช้ Blob URL เพื่อให้โหลดหน้าเว็บจริง 100% 
+        // -----------------------------------------------------------
+        let currentBlobUrl = null;
+
         function updatePreview() {
             const code = editor.value;
-            // Accessing iframe document
-            const doc = preview.contentWindow.document;
+
+            // 1. ล้าง Memory ของ URL เก่าทิ้ง (ป้องกันเครื่องหน่วง)
+            if (currentBlobUrl) {
+                URL.revokeObjectURL(currentBlobUrl);
+            }
+
+            // 2. สร้างไฟล์จำลอง (Blob) จากโค้ด HTML
+            const blob = new Blob([code], { type: 'text/html' });
             
-            // This method works synchronously and reliably clears previous state
-            doc.open();
-            doc.write(code);
-            doc.close();
+            // 3. สร้าง URL และสั่งให้ Iframe โหลดหน้านั้น
+            currentBlobUrl = URL.createObjectURL(blob);
+            preview.src = currentBlobUrl;
         }
         
         function openNewTab() {
