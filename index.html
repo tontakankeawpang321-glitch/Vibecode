@@ -1,1 +1,281 @@
 
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vibe Code Runner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e2e; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+        body {
+            font-family: 'Prompt', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            overflow: hidden; 
+        }
+
+        .code-font { font-family: 'JetBrains Mono', monospace; }
+
+        textarea {
+            resize: none;
+            outline: none;
+            caret-color: #f472b6; 
+        }
+
+        /* Tab System - Only show active tab */
+        .tab-content {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.2s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0.9; transform: scale(0.99); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="h-14 bg-gray-900 border-b border-gray-800 flex items-center justify-between px-4 shrink-0 shadow-lg z-20">
+        <div class="flex items-center gap-2">
+            <div class="flex gap-1.5">
+                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+            </div>
+            <span class="ml-3 font-bold text-lg text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-violet-400">
+                Vibe Runner
+            </span>
+        </div>
+        <div class="flex gap-2">
+            <!-- Copy Button -->
+            <button onclick="copyCode()" class="group flex items-center gap-1 px-3 py-1.5 rounded-md bg-gray-800 hover:bg-blue-600 text-gray-300 hover:text-white transition-all border border-gray-700 hover:border-blue-500" title="Copy All">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                <span class="text-xs font-semibold">COPY</span>
+            </button>
+            
+            <!-- Clear Button -->
+            <button onclick="clearCode()" class="group flex items-center gap-1 px-3 py-1.5 rounded-md bg-gray-800 hover:bg-red-600 text-gray-300 hover:text-white transition-all border border-gray-700 hover:border-red-500" title="Delete All">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <span class="text-xs font-semibold">CLEAR</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 overflow-hidden relative bg-[#1e1e2e]">
+        
+        <!-- Editor Pane (Full Screen) -->
+        <section id="editor-pane" class="tab-content active h-full flex flex-col relative">
+            <div class="absolute top-0 right-4 bg-blue-600/90 backdrop-blur text-[10px] px-3 py-1 text-white rounded-b-lg shadow-md z-10 font-bold tracking-wider">EDITOR</div>
+            <textarea 
+                id="code-editor" 
+                class="w-full h-full bg-[#1e1e2e] text-gray-300 p-4 pt-8 md:p-6 text-sm md:text-base leading-relaxed code-font border-none focus:ring-0"
+                spellcheck="false"
+                placeholder="<!-- เขียนโค้ด HTML ของคุณที่นี่ -->"
+            ></textarea>
+        </section>
+
+        <!-- Preview Pane (Full Screen) -->
+        <section id="preview-pane" class="tab-content h-full bg-white relative">
+             <div class="absolute top-0 right-4 flex gap-2 z-10">
+                <button onclick="openNewTab()" class="bg-gray-800/90 hover:bg-gray-700 backdrop-blur text-[10px] px-3 py-1 text-white rounded-b-lg shadow-md font-bold tracking-wider flex items-center gap-1 transition-colors border-t border-gray-700 cursor-pointer">
+                    OPEN NEW TAB 
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                </button>
+                <div class="bg-green-600/90 backdrop-blur text-[10px] px-3 py-1 text-white rounded-b-lg shadow-md font-bold tracking-wider">PREVIEW</div>
+             </div>
+            <iframe id="preview-frame" class="w-full h-full border-none bg-white"></iframe>
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation Bar (Visible on ALL screens) -->
+    <nav class="h-16 bg-gray-900 border-t border-gray-800 flex shrink-0 pb-safe">
+        <button onclick="switchTab('editor')" id="btn-editor" class="flex-1 flex flex-col items-center justify-center gap-1 text-pink-400 font-medium bg-gray-800/50 relative overflow-hidden group">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-pink-400"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+            <span class="text-xs">Code</span>
+        </button>
+        
+        <button onclick="switchTab('preview')" id="btn-preview" class="flex-1 flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-gray-300 font-medium relative group hover:bg-gray-800/30 transition-colors">
+            <div class="absolute top-0 left-0 w-full h-0.5 bg-transparent group-hover:bg-gray-700 transition-colors"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <span class="text-xs">Preview</span>
+        </button>
+    </nav>
+
+    <script>
+        const defaultCode = `<!DOCTYPE html>
+<html>
+<style>
+  body { 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    margin: 0;
+    background: #000;
+    font-family: 'Segoe UI', sans-serif;
+    color: white;
+    overflow: hidden;
+  }
+  
+  .container {
+    text-align: center;
+    padding: 20px;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+
+  h1 {
+    font-size: 3rem;
+    margin: 0;
+    background: linear-gradient(45deg, #ff00cc, #333399);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  }
+
+  p { color: #888; margin-top: 10px; }
+
+  .btn {
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s;
+  }
+
+  .btn:hover {
+    background: #ff00cc;
+    border-color: #ff00cc;
+    box-shadow: 0 0 15px #ff00cc;
+  }
+</style>
+<body>
+
+  <div class="container">
+    <h1>Vibe Mode</h1>
+    <p>เขียนโค้ด -> กด Preview ด้านล่าง</p>
+    <button class="btn" onclick="alert('Work!')">ทดสอบปุ่ม</button>
+  </div>
+
+</body>
+</html>`;
+
+        const editor = document.getElementById('code-editor');
+        const preview = document.getElementById('preview-frame');
+
+        window.onload = () => {
+            const saved = localStorage.getItem('vibe-code-full');
+            editor.value = saved ? saved : defaultCode;
+            // Pre-load preview silently
+            updatePreview();
+        };
+
+        // Real-time save
+        editor.addEventListener('input', () => {
+            localStorage.setItem('vibe-code-full', editor.value);
+        });
+
+        // Robust Preview Function (Standard Document Write - Most Compatible)
+        function updatePreview() {
+            const code = editor.value;
+            // Accessing iframe document
+            const doc = preview.contentWindow.document;
+            
+            // This method works synchronously and reliably clears previous state
+            doc.open();
+            doc.write(code);
+            doc.close();
+        }
+        
+        function openNewTab() {
+            const code = editor.value;
+            const blob = new Blob([code], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+        }
+
+        // Clear Function (Empty Editor)
+        function clearCode() {
+            editor.value = '';
+            localStorage.removeItem('vibe-code-full');
+            updatePreview();
+        }
+
+        function copyCode() {
+            editor.select();
+            document.execCommand('copy');
+            editor.setSelectionRange(0,0);
+            editor.blur();
+            
+            // Visual Feedback
+            const btn = document.querySelector('button[onclick="copyCode()"] span');
+            const originalText = btn.innerText;
+            btn.innerText = "COPIED!";
+            setTimeout(() => { btn.innerText = originalText; }, 1500);
+        }
+
+        function switchTab(tabName) {
+            const editorPane = document.getElementById('editor-pane');
+            const previewPane = document.getElementById('preview-pane');
+            const btnEditor = document.getElementById('btn-editor');
+            const btnPreview = document.getElementById('btn-preview');
+
+            // Reset UI
+            editorPane.classList.remove('active');
+            previewPane.classList.remove('active');
+            
+            const inactiveClass = "flex-1 flex flex-col items-center justify-center gap-1 text-gray-500 hover:text-gray-300 font-medium relative group hover:bg-gray-800/30 transition-colors";
+            const inactiveBar = '<div class="absolute top-0 left-0 w-full h-0.5 bg-transparent group-hover:bg-gray-700 transition-colors"></div>';
+            
+            const activeClass = "flex-1 flex flex-col items-center justify-center gap-1 font-medium bg-gray-800/50 relative overflow-hidden group";
+            
+            btnEditor.className = inactiveClass;
+            btnEditor.innerHTML = inactiveBar + `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg><span class="text-xs">Code</span>`;
+            
+            btnPreview.className = inactiveClass;
+            btnPreview.innerHTML = inactiveBar + `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg><span class="text-xs">Preview</span>`;
+
+            if (tabName === 'editor') {
+                editorPane.classList.add('active');
+                btnEditor.className = activeClass + " text-pink-400";
+                btnEditor.innerHTML = `<div class="absolute top-0 left-0 w-full h-0.5 bg-pink-400"></div>` + btnEditor.innerHTML.substring(inactiveBar.length); 
+            } else {
+                previewPane.classList.add('active');
+                btnPreview.className = activeClass + " text-green-400";
+                btnPreview.innerHTML = `<div class="absolute top-0 left-0 w-full h-0.5 bg-green-400"></div>` + btnPreview.innerHTML.substring(inactiveBar.length);
+                
+                // FORCE UPDATE PREVIEW
+                updatePreview();
+            }
+        }
+    </script>
+</body>
+</html>
+
+
